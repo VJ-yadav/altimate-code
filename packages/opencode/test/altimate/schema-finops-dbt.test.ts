@@ -9,11 +9,14 @@ afterAll(() => { delete process.env.ALTIMATE_TELEMETRY_DISABLED })
 // Import modules AFTER env var is set
 // ---------------------------------------------------------------------------
 
-// These side-effect imports register handlers
-import "../../src/altimate/native/schema/register"
-import "../../src/altimate/native/finops/register"
-import "../../src/altimate/native/dbt/register"
-import "../../src/altimate/native/local/register"
+// Import registerAll to re-register after Dispatcher.reset() from other tests
+import { registerAll as registerSchema } from "../../src/altimate/native/schema/register"
+import { registerAll as registerFinops } from "../../src/altimate/native/finops/register"
+import { registerAll as registerDbt } from "../../src/altimate/native/dbt/register"
+import { registerAll as registerLocal } from "../../src/altimate/native/local/register"
+
+// Re-register before each describe (another test may have called Dispatcher.reset())
+beforeAll(() => { registerSchema(); registerFinops(); registerDbt(); registerLocal() })
 
 // Import SQL template exports for template generation tests
 import { SQL_TEMPLATES as CreditTemplates } from "../../src/altimate/native/finops/credit-analyzer"
