@@ -205,16 +205,14 @@ for (const item of targets) {
     plugins: [solidPlugin],
     sourcemap: "external",
     // Packages excluded from the compiled binary — loaded lazily at runtime.
-    // NOTE: @altimateai/altimate-core is intentionally NOT external — it's a
-    // napi binary that must be bundled for the CLI to work out of the box.
+    // NOTE: @altimateai/altimate-core and @altimateai/dbt-integration are
+    // intentionally NOT external — they must be bundled for the CLI to work.
     external: [
-      // dbt integration — heavy transitive deps, loaded on first dbt operation
-      "@altimateai/dbt-integration",
       // Database drivers — users install on demand per warehouse
       "pg", "snowflake-sdk", "@google-cloud/bigquery", "@databricks/sql",
       "mysql2", "mssql", "oracledb", "duckdb", "better-sqlite3",
       // Optional infra packages
-      "keytar", "ssh2", "dockerode", "yaml",
+      "keytar", "ssh2", "dockerode",
     ],
     compile: {
       autoloadBunfig: false,
