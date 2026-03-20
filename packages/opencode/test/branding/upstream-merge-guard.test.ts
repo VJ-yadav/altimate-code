@@ -483,6 +483,9 @@ describe("altimate_change marker integrity", () => {
     "src/index.ts",
     "src/agent/agent.ts",
     "src/tool/registry.ts",
+    "src/tool/bash.ts",
+    "src/tool/skill.ts",
+    "src/skill/skill.ts",
     "src/telemetry/index.ts",
     "src/global/index.ts",
     "src/util/token.ts",
@@ -514,4 +517,36 @@ describe("altimate_change marker integrity", () => {
 
     expect(mismatched).toEqual([])
   })
+
+  // Minimum marker counts per file — prevents accidental marker removal.
+  // When you ADD markers to a file, update the count here. If a count drops,
+  // it means someone removed markers that protected custom code from upstream overwrites.
+  const minimumMarkerCounts: Record<string, number> = {
+    "src/session/compaction.ts": 2,
+    "src/session/prompt.ts": 2,
+    "src/installation/index.ts": 2,
+    "src/flag/flag.ts": 2,
+    "src/config/config.ts": 2,
+    "src/config/paths.ts": 2,
+    "src/index.ts": 2,
+    "src/agent/agent.ts": 2,
+    "src/tool/registry.ts": 2,
+    "src/tool/bash.ts": 2,
+    "src/tool/skill.ts": 20,
+    "src/skill/skill.ts": 8,
+    "src/telemetry/index.ts": 2,
+    "src/global/index.ts": 2,
+    "src/util/token.ts": 2,
+    "src/storage/db.ts": 2,
+  }
+
+  for (const [relPath, minCount] of Object.entries(minimumMarkerCounts)) {
+    test(`${relPath} has at least ${minCount} altimate_change markers (regression guard)`, () => {
+      const fullPath = join(pkgDir, relPath)
+      expect(existsSync(fullPath)).toBe(true)
+      const content = readText(fullPath)
+      const actual = (content.match(/altimate_change/g) || []).length
+      expect(actual).toBeGreaterThanOrEqual(minCount)
+    })
+  }
 })

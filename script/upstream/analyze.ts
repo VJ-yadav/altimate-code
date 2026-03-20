@@ -631,10 +631,17 @@ function checkFileForMarkers(file: string, base?: string): MarkerWarning[] {
   let newCodeStart = 0
   let newCodeContext = ""
 
+  // Track marker additions and removals to detect net marker loss.
+  // A removed marker line (prefixed with -) without a corresponding addition
+  // means someone deleted a marker while keeping or modifying the code it protected.
+  let markersAdded = 0
+  let markersRemoved = 0
+  let firstRemovedMarkerContext = ""
+
   for (const line of lines) {
-    const hunkMatch = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)/)
+    const hunkMatch = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)/)
     if (hunkMatch) {
-      currentLine = parseInt(hunkMatch[1]) - 1
+      currentLine = parseInt(hunkMatch[2]) - 1
       continue
     }
 
@@ -642,9 +649,9 @@ function checkFileForMarkers(file: string, base?: string): MarkerWarning[] {
       currentLine++
       const content = line.slice(1).trim()
 
-      if (content.includes("altimate_change start")) { inMarkerBlock = true; continue }
-      if (content.includes("altimate_change end")) { inMarkerBlock = false; continue }
-      if (content.includes("altimate_change")) continue
+      if (content.includes("altimate_change start")) { inMarkerBlock = true; markersAdded++; continue }
+      if (content.includes("altimate_change end")) { inMarkerBlock = false; markersAdded++; continue }
+      if (content.includes("altimate_change")) { markersAdded++; continue }
 
       if (!content) continue
       if (content.startsWith("//") && !content.includes("TODO")) continue
@@ -658,8 +665,15 @@ function checkFileForMarkers(file: string, base?: string): MarkerWarning[] {
           newCodeContext = content
         }
       }
-    } else if (line.startsWith("-")) {
-      // deleted line, don't increment
+    } else if (line.startsWith("-") && !line.startsWith("---")) {
+      // deleted line, don't increment currentLine
+      const content = line.slice(1).trim()
+      if (content.includes("altimate_change")) {
+        markersRemoved++
+        if (!firstRemovedMarkerContext) {
+          firstRemovedMarkerContext = content.slice(0, 80)
+        }
+      }
     } else {
       currentLine++
     }
@@ -671,6 +685,17 @@ function checkFileForMarkers(file: string, base?: string): MarkerWarning[] {
       line: newCodeStart,
       context: newCodeContext.slice(0, 80),
       reason: "New code added to upstream-shared file without altimate_change markers",
+    })
+  }
+
+  // Detect net marker removal: more markers deleted than added means protection was stripped.
+  if (markersRemoved > markersAdded) {
+    const net = markersRemoved - markersAdded
+    warnings.push({
+      file,
+      line: 0,
+      context: firstRemovedMarkerContext,
+      reason: `${net} altimate_change marker(s) removed — custom code may lose upstream merge protection`,
     })
   }
 
