@@ -15,9 +15,9 @@
     "github-triage": false,
     "github-pr-search": false,
   },
-  // altimate_change start — disable auto MCP discovery for altimate-code
+  // altimate_change start — enable auto MCP discovery for altimate-code
   "experimental": {
-    "auto_mcp_discovery": false,
+    "auto_mcp_discovery": true,
   },
   // altimate_change end
 }
