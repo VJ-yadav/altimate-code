@@ -192,7 +192,7 @@ export namespace Command {
           get template() {
             return skill.content
           },
-          hints: [],
+          hints: hints(skill.content),
         }
       }
     } catch (e) {
